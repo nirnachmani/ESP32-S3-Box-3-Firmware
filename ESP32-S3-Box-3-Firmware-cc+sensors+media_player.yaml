@@ -29,6 +29,9 @@ substitutions:
   voice_assist_error_phase_id: "11"
   voice_assist_muted_phase_id: "12"
 
+  # Replace "Area_Name" with the Room / Area name you want to Display to the Temperature & Humidity Sensor of the AHT20 (if used with DOCK)
+  sensor_area: "Area_Name"
+
   # These unqiue characters have been extracted from every test file of every language available on https://github.com/home-assistant/intents (14 March 2024)
   allowed_characters: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
 
@@ -94,16 +97,19 @@ external_components:
       #path: components
     components: [ adf_pipeline, i2s_audio ]
 
+captive_portal:
+
 api:
   on_client_connected:
     - script.execute: draw_display
   on_client_disconnected:
     - script.execute: draw_display
   encryption:
-    key: "T/cQEO8OmynL4D2/h1lUNzeZvILH0ZaI4iHffSHJgWw="
+    key: "8Ifykwjgw/VitYYUsbmM7eXgqx0yeqOWw3t4rM6EY/o="
 
 ota:
-  password: "92675b92c766844bd0ca378e4ef346bc"
+  password: "23df01c259fd4349c57401abba0f84f3"
+
 logger:
   hardware_uart: USB_SERIAL_JTAG
 
@@ -122,14 +128,15 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-  manual_ip:
-    static_ip: 192.168.1.185
-    gateway: 192.168.1.254
-    subnet: 255.255.255.0
-  
+#  manual_ip:
+#    static_ip: 192.168.1.185
+#    gateway: 192.168.1.254
+#    subnet: 255.255.255.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Esp32-S3-Box-3 Fallback Hotspot"
-    password: "P1NTQC2LiPNH"
+    ssid: "S3-Box3 Fallback Hotspot"
+    password: "UU0U7JpDUOx5"
 
 improv_serial:
 
@@ -247,8 +254,6 @@ binary_sensor:
 
         - logger.log: "Play Paused pressed"
 
-
-
 output:
   - platform: ledc
     pin: GPIO47
@@ -266,12 +271,21 @@ light:
 #esp_adf:
 #  board: esp32s3box3
 
+at581x:
+  id: "Radar"
+  i2c_id: bus_a
+
 i2c:
   - id: bus_a
     sda: GPIO8
     scl: GPIO18
     frequency: 100kHz
     scan: True
+
+  - id: bus_b
+    sda: GPIO41
+    scl: GPIO40
+    frequency: 100kHz
 
 i2s_audio:
   - id: i2s_shared
@@ -288,6 +302,7 @@ adf_pipeline:
     i2s_dout_pin: GPIO15
     adf_alc: false
     dac:
+      i2c_id: bus_a
       model: es8311
       address: 0x18
       enable_pin: GPIO46
@@ -303,6 +318,7 @@ adf_pipeline:
     i2s_din_pin: GPIO16
     pdm: false
     adc:
+      i2c_id: bus_a
       model: es7210
       address: 0x40
 
@@ -697,6 +713,7 @@ switch:
                   - micro_wake_word.stop
             - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
             - script.execute: draw_display
+  
   - platform: template
     name: Continued conversation
     id: continued_conversation
@@ -707,6 +724,7 @@ switch:
       - script.execute: return_to_idle
     on_turn_on:
       - script.execute: return_to_idle
+  
   - platform: template
     name: "Mute when absent"
     id: mute_when_absent
@@ -714,6 +732,10 @@ switch:
     optimistic: true
     entity_category: config
     restore_mode: RESTORE_DEFAULT_OFF
+  
+  - platform: at581x
+    at581x_id: "Radar"
+    name: "Enable Radar"
 
 number:
   - platform: template
@@ -729,6 +751,7 @@ number:
     max_value: 10
     unit_of_measurement: s
     mode: slider
+
   - platform: template
     name: "Presence duration"
     id: radar_delayed_off
@@ -947,6 +970,33 @@ text_sensor:
           id(text_response).state = (truncated+"...").c_str();
         }
 
+  - platform: wifi_info
+    ip_address:
+      update_interval: 60s
+      name: IP Address
+      entity_category: "diagnostic"
+    ssid:
+      update_interval: 60s
+      name: Connected SSID
+      entity_category: "diagnostic"
+    bssid:
+      update_interval: 60s
+      name: Connected BSSID
+      entity_category: "diagnostic"
+    mac_address:
+      name: Mac Wifi Address
+      entity_category: "diagnostic"
+    scan_results:
+      update_interval: 60s
+      name: Latest Scan Results
+      entity_category: "diagnostic"
+      
+  # Device Uptime Information 
+  - platform: template
+    name: Uptime Human Readable
+    id: uptime_human
+    icon: mdi:clock-start
+
 color:
   - id: idle_color
     hex: ${idle_illustration_background_color}
@@ -1162,6 +1212,52 @@ sensor:
           max_value: 100
           ignore_out_of_range: true
 
+  # Wifi-Information  
+  - platform: wifi_signal
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  # ESP Chip-Temperatur
+  - platform: internal_temperature
+    name: "Internal Temperature"
+    entity_category: "diagnostic"
+
+  # Device Uptime Information
+  - platform: uptime
+    name: Uptime
+    id: uptime_sensor
+    entity_category: "diagnostic"
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str(); 
+
+  - platform: aht10
+    variant: AHT20
+    i2c_id: bus_b
+    temperature:
+      name: "Temperature ${sensor_area}"
+    humidity:
+      name: "Humidity ${sensor_area}"
+    update_interval: 60s
+
 touchscreen:
   - platform: gt911
     i2c_id: bus_a
@@ -1170,4 +1266,4 @@ touchscreen:
     on_touch:
       - logger.log:
           format: Touch %d at (%d, %d)
-          args: [touch.id, touch.x, touch.y]
+          args: [touch.id, touch.x, touch.y]   
