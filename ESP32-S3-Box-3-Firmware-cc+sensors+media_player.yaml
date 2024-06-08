@@ -105,10 +105,10 @@ api:
   on_client_disconnected:
     - script.execute: draw_display
   encryption:
-    key: "8Ifykwjgw/VitYYUsbmM7eXgqx0yeqOWw3t4rM6EY/o="
+    key: ""
 
 ota:
-  password: "23df01c259fd4349c57401abba0f84f3"
+  password: ""
 
 logger:
   hardware_uart: USB_SERIAL_JTAG
@@ -135,8 +135,8 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "S3-Box3 Fallback Hotspot"
-    password: "UU0U7JpDUOx5"
+    ssid: "Esp32-S3-Box-3 Fallback Hotspot"
+    password: ""
 
 improv_serial:
 
@@ -343,16 +343,31 @@ media_player:
       - adf_i2s_out
 
     on_idle:
-      - display.page.show: idle_page
-      - component.update: s3_box_lcd
+      #- display.page.show: idle_page
+      #- component.update: s3_box_lcd
+      - if:
+          condition:
+            - lambda: return (id(replying_to_query) == true);      
+          then:  
+            - if:  
+                condition:
+                  - switch.is_on: continued_conversation
+                then:
+                  - delay: 1s
+                  - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
+                  - script.execute: stt_timeout_to_idle                    
+                else:
+                  - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};      
+            - script.execute: draw_display            
+            - lambda: id(replying_to_query) = false;
 
-    on_play:
-      - display.page.show: playing_music
-      - component.update: s3_box_lcd
+    #on_play:
+      #- display.page.show: playing_music
+      #- component.update: s3_box_lcd
 
-    on_announcement:
-      - display.page.show: announcing
-      - component.update: s3_box_lcd
+    #on_announcement:
+      #- display.page.show: announcing
+      #- component.update: s3_box_lcd
 
 microphone:
   - platform: adf_pipeline
@@ -443,15 +458,15 @@ voice_assistant:
             - switch.is_on: continued_conversation
         then:
           - script.execute: return_to_idle  
+  on_tts_end:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+    - script.execute: draw_display
     - if:
         condition:
           - switch.is_on: continued_conversation
-        then:          
-          - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
+        then:
+          - lambda: id(replying_to_query) = true;
           - script.execute: stt_timeout_to_idle
-        else:
-          - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-    - script.execute: draw_display
   # on_tts_stream_start:
   #   - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
   #   - script.execute: draw_display
@@ -871,6 +886,10 @@ globals:
     type: int
     restore_value: no
     initial_value: '5'
+  - id: replying_to_query
+    type: bool
+    restore_value: false
+    initial_value: "false"
 
 image:
   - file: ${error_illustration_file}
