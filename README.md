@@ -6,6 +6,6 @@ I combined [jaymunro](https://github.com/jaymunro/esphome_firmware)'s firmware f
 I made a few other changes:
  - I removed the frames around the text (I just like it better like that)
  - I clear the query and reply texts so that the old text doesn't display in a new query before the new one displays
- - I change the time to use the Home Assistant time 
+ - Time uses Home Assistant time 
 
 Thank you [jaymunro](https://github.com/jaymunro) and [gnumpi](https://github.com/gnumpi) for your good work. 
