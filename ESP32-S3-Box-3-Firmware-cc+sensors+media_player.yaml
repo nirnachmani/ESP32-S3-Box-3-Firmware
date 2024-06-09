@@ -10,8 +10,6 @@ substitutions:
   error_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/error_320_240.png
   idle_gnumpi_file: https://github.com/gnumpi/esphome_audio/raw/dev-next/examples/assets/gnumpi_headset.png
   listening_gnumpi_file: https://github.com/gnumpi/esphome_audio/raw/dev-next/examples/assets/gnumpi_listening.png
-  playing_music_gnumpi_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/replying_320_240.png
-  announcing_gnumpi_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/replying_320_240.png
 
   loading_illustration_background_color: "000000"
   idle_illustration_background_color: "000000"
@@ -28,8 +26,10 @@ substitutions:
   voice_assist_not_ready_phase_id: "10"
   voice_assist_error_phase_id: "11"
   voice_assist_muted_phase_id: "12"
+  volume_up_phase_id: "13"
+  volume_down_phase_id: "14"
 
-  # Replace "Area_Name" with the Room / Area name you want to Display to the Temperature & Humidity Sensor of the AHT20 (if used with DOCK)
+    # Replace "Area_Name" with the Room / Area name you want to Display to the Temperature & Humidity Sensor of the AHT20 (if used with DOCK)
   sensor_area: "Area_Name"
 
   # These unqiue characters have been extracted from every test file of every language available on https://github.com/home-assistant/intents (14 March 2024)
@@ -56,6 +56,8 @@ esphome:
     priority: 600
     then:
       - script.execute: draw_display
+      - lambda: id(speaker_volume) = id(startup_volume).state; 
+      - script.execute: set_volume
       - delay: 30s
       - if:
           condition:
@@ -128,12 +130,11 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-#  manual_ip:
-#    static_ip: 192.168.1.185
-#    gateway: 192.168.1.254
-#    subnet: 255.255.255.0
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
+ # manual_ip:
+ #   static_ip: 192.168.1.185
+ #   gateway: 192.168.1.254
+ #   subnet: 255.255.255.0
+  
   ap:
     ssid: "Esp32-S3-Box-3 Fallback Hotspot"
     password: ""
@@ -214,11 +215,16 @@ binary_sensor:
       then:
         - logger.log: "Volume Minus pressed"
         - lambda: |-
-            if (id(speaker_volume) > 0) {
-              id(speaker_volume) -= 1;
+            id(speaker_volume) = static_cast<int>(id(adf_media_player).volume * 100);
+            if (id(speaker_volume) > 5) {
+              id(speaker_volume) -= 5;
             }
-        - component.update: s3_box_lcd
-        - script.execute: set_volume
+        - lambda: id(voice_assistant_phase_backup) = id(voice_assistant_phase);
+        - lambda: id(voice_assistant_phase) = ${volume_down_phase_id}; 
+        - script.execute: draw_display 
+        - script.execute: set_volume        
+        - lambda: id(voice_assistant_phase) = id(voice_assistant_phase_backup); 
+        - script.execute: draw_display
 
   - platform: touchscreen
     name: Volume Plus
@@ -230,11 +236,16 @@ binary_sensor:
       then:
         - logger.log: "Volume Plus pressed"
         - lambda: |-
-            if (id(speaker_volume) < 10) {
-              id(speaker_volume) += 1;
+            id(speaker_volume) = static_cast<int>(id(adf_media_player).volume * 100);
+            if (id(speaker_volume) < 95) {
+              id(speaker_volume) += 5;
             }
-        - component.update: s3_box_lcd
-        - script.execute: set_volume
+        - lambda: id(voice_assistant_phase_backup) = id(voice_assistant_phase);
+        - lambda: id(voice_assistant_phase) = ${volume_up_phase_id}; 
+        - script.execute: draw_display 
+        - script.execute: set_volume        
+        - lambda: id(voice_assistant_phase) = id(voice_assistant_phase_backup); 
+        - script.execute: draw_display
 
   - platform: touchscreen
     name: Play Pause
@@ -281,7 +292,7 @@ i2c:
     scl: GPIO18
     frequency: 100kHz
     scan: True
-
+  
   - id: bus_b
     sda: GPIO41
     scl: GPIO40
@@ -343,8 +354,6 @@ media_player:
       - adf_i2s_out
 
     on_idle:
-      #- display.page.show: idle_page
-      #- component.update: s3_box_lcd
       - if:
           condition:
             - lambda: return (id(replying_to_query) == true);      
@@ -357,17 +366,20 @@ media_player:
                   - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
                   - script.execute: stt_timeout_to_idle                    
                 else:
-                  - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};      
-            - script.execute: draw_display            
+                  - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+                  - script.execute: draw_display      
             - lambda: id(replying_to_query) = false;
+          else:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+            - script.execute: draw_display            
 
-    #on_play:
-      #- display.page.show: playing_music
-      #- component.update: s3_box_lcd
+    on_play:
+      - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+      - script.execute: draw_display
 
-    #on_announcement:
-      #- display.page.show: announcing
-      #- component.update: s3_box_lcd
+    on_announcement:
+      - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+      - script.execute: draw_display
 
 microphone:
   - platform: adf_pipeline
@@ -545,7 +557,7 @@ script:
   - id: set_volume
     then:
       - media_player.volume_set:
-          volume: !lambda return 0.5 + id(speaker_volume) * 0.05 ;
+          volume: !lambda return id(speaker_volume) * 0.01 ;
   - id: stt_timeout_to_idle
     mode: restart     # restart the timer if called before timeout
     then:
@@ -661,6 +673,14 @@ script:
                                 id(s3_box_lcd).show_page(no_ha_page);
                                 id(s3_box_lcd).update();
                                 break;
+                              case ${volume_up_phase_id}:
+                                id(s3_box_lcd).show_page(volume_up_page);
+                                id(s3_box_lcd).update();
+                                break; 
+                              case ${volume_down_phase_id}:
+                                id(s3_box_lcd).show_page(volume_down_page);
+                                id(s3_box_lcd).update();
+                                break;                                                                
                               default:
                                 id(s3_box_lcd).show_page(idle_page);
                                 id(s3_box_lcd).update();
@@ -747,7 +767,7 @@ switch:
     optimistic: true
     entity_category: config
     restore_mode: RESTORE_DEFAULT_OFF
-  
+
   - platform: at581x
     at581x_id: "Radar"
     name: "Enable Radar"
@@ -780,6 +800,20 @@ number:
     unit_of_measurement: s
     entity_category: config
     mode: box
+
+  - platform: template
+    entity_category: config
+    name: Startup volume
+    id: startup_volume
+    icon: mdi:volume-medium
+    optimistic: true
+    restore_value: true
+    initial_value: 75
+    min_value: 0
+    step: 5
+    max_value: 100
+    unit_of_measurement: "%"
+    mode: slider
 
 select:
   - platform: template
@@ -874,6 +908,10 @@ globals:
     type: int
     restore_value: false
     initial_value: ${voice_assist_not_ready_phase_id}
+  - id: voice_assistant_phase_backup
+    type: int
+    restore_value: false
+    initial_value: ${voice_assist_not_ready_phase_id}
   - id: date_format_string
     type: std::string
     restore_value: true
@@ -885,7 +923,7 @@ globals:
   - id: speaker_volume
     type: int
     restore_value: no
-    initial_value: '5'
+    initial_value: '50'
   - id: replying_to_query
     type: bool
     restore_value: false
@@ -922,16 +960,6 @@ image:
     resize: 320x240
     type: RGB24
     use_transparency: true
-  - file: ${playing_music_gnumpi_file}
-    id: gnumpi_dj
-    resize: 320x240
-    type: RGB24
-    use_transparency: true
-  - file: ${announcing_gnumpi_file}
-    id: gnumpi_megaphone
-    resize: 320x240
-    type: RGB24
-    use_transparency: true
   - file: https://github.com/esphome/firmware/raw/main/voice-assistant/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
     resize: 320x240
@@ -942,6 +970,14 @@ image:
     resize: 320x240
     type: RGB24
     use_transparency: true
+  - file: mdi:volume-plus
+    id: volume_up
+    resize: 240x180
+    type: TRANSPARENT_BINARY
+  - file: mdi:volume-minus
+    id: volume_down
+    resize: 240x180
+    type: TRANSPARENT_BINARY    
 
 font:
   - file:
@@ -1009,7 +1045,7 @@ text_sensor:
       update_interval: 60s
       name: Latest Scan Results
       entity_category: "diagnostic"
-      
+
   # Device Uptime Information 
   - platform: template
     name: Uptime Human Readable
@@ -1072,10 +1108,27 @@ display:
         lambda: |-
           it.fill(id(idle_color));
           it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_idle), ImageAlign::CENTER);
+
+          char media_player_volume_display[80];
+          sprintf(media_player_volume_display, "Volume: %.0f%%", id(adf_media_player).volume * 100);
+
+          int x1_vol, y1_vol, text_width_vol, text_height_vol;                  
+          it.get_text_bounds(0, 0, media_player_volume_display, id(font_text), TextAlign::TOP_LEFT, &x1_vol, &y1_vol, &text_width_vol, &text_height_vol); // Get the text dimensions            
+          int rect_width_vol = text_width_vol + 10; // 5-pixel padding
+          int rect_height_vol = text_height_vol + 10; // 5-pixel padding
+          int rect_x_vol = it.get_width() - 10 - rect_width_vol; // Width of screen minus margin from the right minus width of rectangle 
+          int rect_y_vol = 10; // Margin from the top
+          int text_x_vol = rect_x_vol + 5; // 5-pixel padding
+          int text_y_vol = rect_y_vol + 5; // 5-pixel padding
+
+          it.filled_rectangle(rect_x_vol, rect_y_vol, rect_width_vol, rect_height_vol, Color::BLACK); // Draw the black rectangle            
+          it.printf(text_x_vol, text_y_vol, id(font_text), Color::WHITE, "Volume: %.0f%%", id(adf_media_player).volume * 100); // Print the volume in white
+          
+          
           if ( id(display_text).state ) {
 
             int x1, y1, text_width, text_height;
-            it.get_text_bounds(0, 0, "${wake_word_prompt}", id(font_text), TextAlign::TOP_LEFT, &x1, &y1, &text_width, &text_height); // Get the text dimensions
+            it.get_text_bounds(0, 0, "${wake_word_prompt}", id(font_text), TextAlign::TOP_LEFT, &x1, &y1, &text_width, &text_height); // Get the text dimensions            
             int rect_width = text_width + 10; // 5-pixel padding
             int rect_height = text_height + 10; // 5-pixel padding
             int rect_x = 10; // Margin from the left
@@ -1201,6 +1254,12 @@ display:
       - id: muted_page
         lambda: |-
           it.fill(Color::BLACK);
+      - id: volume_up_page
+        lambda: |-
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(volume_up), ImageAlign::CENTER);
+      - id: volume_down_page
+        lambda: |-
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(volume_down), ImageAlign::CENTER);
   
 sensor:
   - platform: adc
@@ -1230,8 +1289,7 @@ sensor:
           min_value: 0
           max_value: 100
           ignore_out_of_range: true
-
-  # Wifi-Information  
+  
   - platform: wifi_signal
     name: "WiFi Signal dB"
     id: wifi_signal_db
@@ -1267,7 +1325,7 @@ sensor:
                 (minutes ? to_string(minutes) + "m " : "") +
                 (to_string(seconds) + "s")
               ).c_str(); 
-
+  
   - platform: aht10
     variant: AHT20
     i2c_id: bus_b
@@ -1285,4 +1343,4 @@ touchscreen:
     on_touch:
       - logger.log:
           format: Touch %d at (%d, %d)
-          args: [touch.id, touch.x, touch.y]   
+          args: [touch.id, touch.x, touch.y]
