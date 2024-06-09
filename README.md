@@ -7,6 +7,7 @@ I made a few other changes:
  - I removed the frames around the text (I just like it better like that)
  - I clear the query and reply texts so that the old text doesn't display in a new query before the new one displays
  - The time is taken for Home Assistant
+ - Added volume information in the right corner, visual feedback when pressing to change the volume on the touchscreen and startup volume configuration setting to set a default volume when starting
 
 Now also includes wifi information, radar, up-time, temp and humidity, internal temp and more thanks to [Christoph](https://github.com/ChristophCaina/ESP32-S3-Box-3-Firmware) 
 
