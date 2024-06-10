@@ -216,6 +216,7 @@ binary_sensor:
         - logger.log: "Volume Minus pressed"
         - lambda: |-
             id(speaker_volume) = static_cast<int>(id(adf_media_player).volume * 100);
+            id(speaker_volume) = id(speaker_volume) - (id(speaker_volume) % 5); // rounded to 5
             if (id(speaker_volume) > 5) {
               id(speaker_volume) -= 5;
             }
@@ -237,6 +238,7 @@ binary_sensor:
         - logger.log: "Volume Plus pressed"
         - lambda: |-
             id(speaker_volume) = static_cast<int>(id(adf_media_player).volume * 100);
+            id(speaker_volume) = id(speaker_volume) - (id(speaker_volume) % 5); // rounded to 5
             if (id(speaker_volume) < 95) {
               id(speaker_volume) += 5;
             }
