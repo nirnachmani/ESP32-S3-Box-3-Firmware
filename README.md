@@ -8,6 +8,10 @@ I made a few other changes:
  - I clear the query and reply texts so that the old text doesn't display in a new query before the new one displays
  - The time is taken for Home Assistant
  - Added volume information in the right corner, visual feedback when pressing to change the volume on the touchscreen and startup volume configuration setting to set a default volume when starting
+ - Muting microphone can now be done by tapping on left top corner of the screen. When microphone is mute, an icon appears in the left top corner, instead of wake word.
+ - Muting speaker can be done by tapping on right top corner of the screen. When speaker is mute, an icon appears in the right top corner, instead of volume.
+
+Known bug - when muting and then un-muting with physical mute button, microphone/wake word detection stops working until reboot. I am unable to find the cause of that.
 
 Now also includes wifi information, radar, up-time, temp and humidity, internal temp and more thanks to [Christoph](https://github.com/ChristophCaina/ESP32-S3-Box-3-Firmware) 
 
