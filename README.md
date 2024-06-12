@@ -6,7 +6,7 @@ I combined [jaymunro](https://github.com/jaymunro/esphome_firmware)'s firmware f
 I made a few other changes:
  - I removed the frames around the text (I just like it better like that)
  - I clear the query and reply texts so that the old text doesn't display in a new query before the new one displays
- - The time is taken for Home Assistant
+ - The time is taken from Home Assistant
  - Added volume information in the right corner, visual feedback when pressing to change the volume on the touchscreen and startup volume configuration setting to set a default volume when starting
  - Muting microphone can now be done by tapping on left top corner of the screen. When microphone is mute, an icon appears in the left top corner, instead of wake word.
  - Muting speaker can be done by tapping on right top corner of the screen. When speaker is mute, an icon appears in the right top corner, instead of volume.
