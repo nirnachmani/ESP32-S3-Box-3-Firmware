@@ -178,6 +178,7 @@ binary_sensor:
             condition:
               switch.is_on: mute_when_absent
             then:
+              - lambda: id(mute_backup) = id(mute).state;
               - switch.turn_on: mute
               - light.turn_off: led
     on_press:
@@ -186,7 +187,11 @@ binary_sensor:
             condition:
               switch.is_on: mute_when_absent
             then:
-              - switch.turn_off: mute
+              - if:  
+                  condition:
+                    - lambda: return !id(mute_backup);
+                  then:
+                    - switch.turn_off: mute
               - light.turn_on: led  
 
   - platform: gpio
@@ -972,6 +977,10 @@ globals:
     type: int
     restore_value: no
     initial_value: ''
+  - id: mute_backup
+    type: bool
+    restore_value: false
+    initial_value: "false"
 
 image:
   - file: ${error_illustration_file}
