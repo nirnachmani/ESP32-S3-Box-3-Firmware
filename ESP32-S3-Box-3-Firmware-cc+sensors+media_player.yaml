@@ -176,7 +176,9 @@ binary_sensor:
       then:
         - if:
             condition:
-              switch.is_on: mute_when_absent
+              and:
+                - switch.is_on: mute_when_absent
+                - switch.is_on: enable_radar                
             then:
               - lambda: id(mute_backup) = id(mute).state;
               - switch.turn_on: mute
@@ -318,7 +320,7 @@ light:
 
 at581x:
   id: "Radar"
-  i2c_id: bus_a
+  i2c_id: bus_b
 
 i2c:
   - id: bus_a
@@ -816,6 +818,7 @@ switch:
   - platform: at581x
     at581x_id: "Radar"
     name: "Enable Radar"
+    id: enable_radar
 
 number:
   - platform: template
